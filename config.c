@@ -3,6 +3,7 @@
 #include <unistd.h>
 void get_ae_mode(uvc_device_handle_t *devh) {
   uint8_t mode;
+  uint8_t priority;
   uvc_error_t res;
   res = uvc_get_ae_mode(devh, &mode, UVC_GET_CUR);
   if (res < 0) {
@@ -26,8 +27,28 @@ void get_ae_mode(uvc_device_handle_t *devh) {
       puts("unknown ae mode");
       break;
   }
+  res = uvc_get_ae_priority(devh, &priority, UVC_GET_CUR);
+  if (res < 0) {
+    uvc_perror(res, "get_ae_priority");
+    return;
+  }
+  if( priority == 0) {
+    puts("frame rate must remain constant");
+  } else {
+    puts("frame rate may be varied for AE purposes");
+  }
 }
 
+void adjust_ae(uvc_device_handle_t *devh, int adj) {
+  uvc_error_t res;
+  puts("setting AE priority to allow variable frame rate");
+  res = uvc_set_ae_priority(devh, 1); // 1 = allow frame rate to vary
+  if( res<0) {
+    uvc_perror(res, "set_ae_priority");
+    return;
+  }
+
+}
 
 int main(int argc, char **argv) {
   uvc_context_t *ctx;
@@ -60,6 +81,7 @@ int main(int argc, char **argv) {
     } else {
       puts("Device opened");
       get_ae_mode(devh);
+      adjust_ae(devh, 0);
       /* Release our handle on the device */
       uvc_close(devh);
       puts("Device closed");
